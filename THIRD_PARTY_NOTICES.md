@@ -30,7 +30,9 @@ v3** (due to `--enable-gpl --enable-version3`).
 （configure フラグ `--enable-gpl --enable-version3` による）。
 
 - GPL v3 full text / 全文: <https://www.gnu.org/licenses/gpl-3.0.html>
-- FFmpeg source (corresponding commit `g072101bd52` / 対応コミット):
+- FFmpeg source — corresponding commit `072101bd52` / 対応コミット
+  （バージョン文字列 `N-106550-g072101bd52` の `g` は git-describe が付ける
+  マーカーで、ハッシュの一部ではありません）:
   <https://git.ffmpeg.org/ffmpeg.git>
 - Reproducible builds of this release / 再現ビルドの入手元:
   <https://github.com/BtbN/FFmpeg-Builds/releases>
@@ -49,6 +51,27 @@ FFmpeg binaries, not to the MIT-licensed source in this repository.
 GPL は同梱バイナリ部分のみに適用され、このリポジトリの MIT ソースには
 適用されません。
 
+### If you redistribute the exe / exe を再配布する場合
+
+The bundled FFmpeg binaries stay under GPLv3 wherever they travel. If you
+redistribute this `.exe` (in whole or in part), the GPL obligations for the
+FFmpeg portion travel with it — in short: include this notice and the GPL v3
+text with the binary, and provide (or offer to provide) the Corresponding
+Source of the FFmpeg build you ship — the upstream repository and commit
+listed above, or the reproducible BtbN build it came from. The MIT license of
+the app source is unaffected.
+
+同梱 FFmpeg バイナリは、どこへ配布しても GPLv3 のままです。この exe を
+（全部でも一部でも）再配布する場合は、FFmpeg 部分に対する GPLv3 の義務も
+一緒に移動します。要点は、**この notice と GPL v3 本文をバイナリに随伴**し、
+同梱した FFmpeg ビルドの **Corresponding Source（上記のアップストリーム
+リポジトリとコミット、または由来となった BtbN の再現ビルド）を提供する
+（または提供を申し出る）** ことです。アプリソースの MIT ライセンスには
+影響ありません。
+
+Our GitHub Releases therefore ship: `pass_through_gui.exe` +
+`THIRD_PARTY_NOTICES.md` + `gpl-3.0.txt`.
+
 ## Other / その他
 
 - **Python** (PSF license) and **Tkinter/Tcl-Tk** — bundled into the exe by
@@ -57,3 +80,6 @@ GPL は同梱バイナリ部分のみに適用され、このリポジトリの 
 - **PyInstaller** (GPL v2 with runtime exception) is used only as a build
   tool; its runtime exception covers the bundled bootloader.
   See <https://pyinstaller.org>.
+- **SDL2** (zlib license) — statically linked into the bundled `ffplay.exe`
+  (the FFmpeg build is configured with `--enable-sdl2`, and no SDL2 DLL is
+  shipped). See <https://www.libsdl.org>.

@@ -20,13 +20,13 @@ same PC also runs an online-meeting client (e.g. Webex).
 ![System architecture](docs/images/overview_en.png)
 
 **Features**: ultra-low-latency pipeline (`nobuffer` / `low_delay` /
-`framedrop`) · device & monitor selection GUI · handles multiple
+`framedrop` / `probesize 32k`) · device & monitor selection GUI · handles multiple
 same-name capture devices · settings persisted to JSON · Japanese/English UI
 switchable at runtime (default: Japanese) · single-file exe, no Python or
 ffmpeg install required on target PCs.
 
 **How to get it**: download `pass_through_gui.exe` from
-[Releases](../../releases) and double-click it.
+[Releases](releases) and double-click it.
 
 **License**: MIT (this app). Bundled FFmpeg binaries are GPLv3 — see
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
@@ -56,7 +56,7 @@ ffmpeg install required on target PCs.
 
 ## 入手方法（exe）
 
-1. このリポジトリの [Releases](../../releases) ページを開く
+1. このリポジトリの [Releases](releases) ページを開く
 2. 最新の `pass_through_gui.exe` をダウンロード
 3. exe を任意のフォルダに置いてダブルクリック（1ファイルで動きます）
 
