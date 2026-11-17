@@ -265,6 +265,16 @@ class FfplayExitReportTests(unittest.TestCase):
         _, msg = ffplay_exit_report(0, 0.2, "I/O error video=@x")
         self.assertIn("I/O error", msg)
 
+    def test_english_message_with_lang_param(self):
+        failure, msg = ffplay_exit_report(0, 0.2, "boom", lang="en")
+        self.assertTrue(failure)
+        self.assertIn("ffplay exited", msg)
+
+    def test_legacy_three_arg_call_still_returns_japanese(self):
+        failure, msg = ffplay_exit_report(2, 10.0, "")
+        self.assertTrue(failure)
+        self.assertIn("ffplay が終了しました", msg)
+
 
 class _StubController:
     """App.start() の検証用スタブ（実際のプロセスは起動しない）。"""

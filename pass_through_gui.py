@@ -315,11 +315,12 @@ class _MONITORINFOEX(ctypes.Structure):
 
 
 _MONITORINFOF_PRIMARY = 0x00000001
-def ffplay_exit_report(code, elapsed, stderr_tail=""):
+def ffplay_exit_report(code, elapsed, stderr_tail="", lang="ja"):
     """ffplay 終了の分類。戻り値 (is_failure: bool, ユーザー向けメッセージ)。
 
     この ffplay ビルドは入力失敗でも exit code 0 を返すため、
     「起動から3秒以内に終了」した場合も失敗扱いにして stderr を提示する。
+    lang で表示言語を選べる（既定 ja）。
     """
     error = (code is not None and code != 0) or elapsed < FAST_EXIT_SECONDS
     lines = [ln for ln in stderr_tail.splitlines() if ln.strip()]
@@ -330,11 +331,11 @@ def ffplay_exit_report(code, elapsed, stderr_tail=""):
         detail = ln.strip()
         break
     if error:
-        msg = f"ffplay が終了しました (code {code})"
+        msg = tr(lang, "runtime.exited", code=code)
         if detail:
             msg += f"\n{detail}"
         return True, msg
-    return False, "停止しました"
+    return False, tr(lang, "status.stopped")
 
 
 _EnumMonProc = ctypes.WINFUNCTYPE(
@@ -509,17 +510,14 @@ class DisplayController:
         # running() は poll() が非 None になるため False のまま。
 
 
-MONITOR_AUTO_LABEL = "自動（プライマリ以外＝プロジェクター）"
-FORMAT_AUTO_LABEL = "自動（デバイス推奨）"
-
-
 class App:
     def __init__(self, root, config_path=None):
         self.root = root
-        self.root.title("パススルー表示（キャプチャー → プロジェクター）")
         self.root.geometry("560x540")
         self._config_path = config_path
         self.cfg = load_config(config_path)
+        self.lang = self.cfg.get("language", "ja")   # load_config で ja に正規化済み
+        self.root.title(self._t("app.title"))
         self.monitors = monitors_from_api()
         self.controller = DisplayController()
         self._video_map = {}          # コンボ表示名 -> alternative name
@@ -531,44 +529,48 @@ class App:
         self._apply_cfg_to_widgets()
         self.refresh_devices()
 
+    def _t(self, key, **kwargs) -> str:
+        """翻訳ヘルパー: self.lang の言語で tr() を引く。"""
+        return tr(self.lang, key, **kwargs)
+
     # ---- UI 構築 ----
     def _build_widgets(self):
         pad = {"padx": 8, "pady": 4}
-        self.status_var = tk.StringVar(value="準備完了")
+        self.status_var = tk.StringVar(value=self._t("status.ready"))
         tk.Label(self.root, textvariable=self.status_var, anchor="w",
                  fg="#0a6", relief="sunken").pack(fill="x", padx=8, pady=6)
 
-        frame = ttk.LabelFrame(self.root, text="1. 入力デバイス")
+        frame = ttk.LabelFrame(self.root, text=self._t("section.input"))
         frame.pack(fill="x", padx=8, pady=4)
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
-        ttk.Label(row, text="映像デバイス:").pack(side="left")
+        ttk.Label(row, text=self._t("label.video")).pack(side="left")
         self.video_combo = ttk.Combobox(row, state="readonly")
         self.video_combo.pack(side="left", fill="x", expand=True, padx=(4, 0))
-        ttk.Button(row, text="再検出", command=self.refresh_devices).pack(side="left", padx=(6, 0))
+        ttk.Button(row, text=self._t("button.rescan"), command=self.refresh_devices).pack(side="left", padx=(6, 0))
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
-        ttk.Label(row, text="音声デバイス:").pack(side="left")
+        ttk.Label(row, text=self._t("label.audio")).pack(side="left")
         self.audio_combo = ttk.Combobox(row, state="readonly")
         self.audio_combo.pack(side="left", fill="x", expand=True, padx=(4, 0))
-        self.device_hint = tk.StringVar(value="※ キャプチャーボードを挿したら「再検出」で更新できます")
+        self.device_hint = tk.StringVar(value=self._t("hint.devices"))
         ttk.Label(frame, textvariable=self.device_hint, foreground="#666").pack(anchor="w", **pad)
 
-        frame = ttk.LabelFrame(self.root, text="2. 表示設定")
+        frame = ttk.LabelFrame(self.root, text=self._t("section.display"))
         frame.pack(fill="x", padx=8, pady=4)
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
-        ttk.Label(row, text="解像度:").pack(side="left")
+        ttk.Label(row, text=self._t("label.resolution")).pack(side="left")
         self.size_combo = ttk.Combobox(
-            row, values=[FORMAT_AUTO_LABEL, "1920x1080", "1280x720", "3840x2160", "640x480"])
+            row, values=[self._t("format.auto"), "1920x1080", "1280x720", "3840x2160", "640x480"])
         self.size_combo.pack(side="left", fill="x", expand=True, padx=(4, 0))
-        ttk.Label(row, text="FPS:").pack(side="left", padx=(12, 0))
+        ttk.Label(row, text=self._t("label.fps")).pack(side="left", padx=(12, 0))
         self.fps_combo = ttk.Combobox(
-            row, width=8, values=[FORMAT_AUTO_LABEL, "30", "25", "60", "24"])
+            row, width=8, values=[self._t("format.auto"), "30", "25", "60", "24"])
         self.fps_combo.pack(side="left", padx=(4, 0))
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
-        ttk.Label(row, text="表示先:").pack(side="left")
+        ttk.Label(row, text=self._t("label.output")).pack(side="left")
         self.monitor_combo = ttk.Combobox(row, state="readonly")
         self.monitor_combo.pack(side="left", fill="x", expand=True, padx=(4, 0))
         row = ttk.Frame(frame)
@@ -576,19 +578,19 @@ class App:
         self.chk_fullscreen = tk.BooleanVar(value=True)
         self.chk_audio = tk.BooleanVar(value=True)
         self.chk_lowlatency = tk.BooleanVar(value=True)
-        ttk.Checkbutton(row, text="フルスクリーンで表示", variable=self.chk_fullscreen).pack(side="left")
-        ttk.Checkbutton(row, text="音声も出力", variable=self.chk_audio).pack(side="left", padx=(12, 0))
-        ttk.Checkbutton(row, text="低遅延(最速)", variable=self.chk_lowlatency).pack(side="left", padx=(12, 0))
+        ttk.Checkbutton(row, text=self._t("check.fullscreen"), variable=self.chk_fullscreen).pack(side="left")
+        ttk.Checkbutton(row, text=self._t("check.audio"), variable=self.chk_audio).pack(side="left", padx=(12, 0))
+        ttk.Checkbutton(row, text=self._t("check.lowlatency"), variable=self.chk_lowlatency).pack(side="left", padx=(12, 0))
 
-        frame = ttk.LabelFrame(self.root, text="3. 操作")
+        frame = ttk.LabelFrame(self.root, text=self._t("section.controls"))
         frame.pack(fill="x", padx=8, pady=4)
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
-        self.btn_start = ttk.Button(row, text="▶ 開始", command=self.start)
+        self.btn_start = ttk.Button(row, text=self._t("button.start"), command=self.start)
         self.btn_start.pack(side="left")
-        self.btn_stop = ttk.Button(row, text="■ 停止", command=self.stop, state="disabled")
+        self.btn_stop = ttk.Button(row, text=self._t("button.stop"), command=self.stop, state="disabled")
         self.btn_stop.pack(side="left", padx=(8, 0))
-        self.elapsed_var = tk.StringVar(value="停止中")
+        self.elapsed_var = tk.StringVar(value=self._t("status.idle"))
         ttk.Label(row, textvariable=self.elapsed_var).pack(side="right")
 
     def _refresh_monitors(self):
@@ -600,23 +602,24 @@ class App:
         if prev in self._monitor_by_label:
             self.monitor_combo.set(prev)
         else:
-            self.monitor_combo.set(MONITOR_AUTO_LABEL)
+            self.monitor_combo.set(self._t("monitor.auto"))
 
     def _monitor_labels(self):
-        labels = [MONITOR_AUTO_LABEL]
-        self._monitor_by_label = {MONITOR_AUTO_LABEL: -1}
+        labels = [self._t("monitor.auto")]
+        self._monitor_by_label = {self._t("monitor.auto"): -1}
         for m in self.monitors:
-            tag = " (プライマリ)" if m["primary"] else ""
-            lab = f"モニター{m['index'] + 1}: {m['name']} ({m['w']}x{m['h']}@{m['x']},{m['y']}){tag}"
+            tag = self._t("monitor.primary") if m["primary"] else ""
+            lab = (self._t("monitor.entry", n=m["index"] + 1, name=m["name"],
+                           w=m["w"], h=m["h"], x=m["x"], y=m["y"]) + tag)
             labels.append(lab)
             self._monitor_by_label[lab] = m["index"]
         return labels
 
     def _apply_cfg_to_widgets(self):
         vs = str(self.cfg.get("video_size", "auto"))
-        self.size_combo.set(FORMAT_AUTO_LABEL if vs == "auto" else vs)
+        self.size_combo.set(self._t("format.auto") if vs == "auto" else vs)
         fs = str(self.cfg.get("framerate", "auto"))
-        self.fps_combo.set(FORMAT_AUTO_LABEL if fs == "auto" else fs)
+        self.fps_combo.set(self._t("format.auto") if fs == "auto" else fs)
         self.chk_fullscreen.set(bool(self.cfg.get("fullscreen", True)))
         self.chk_audio.set(bool(self.cfg.get("audio_output", True)))
         self.chk_lowlatency.set(bool(self.cfg.get("low_latency", True)))
@@ -629,7 +632,7 @@ class App:
 
     # ---- デバイス列挙 ----
     def refresh_devices(self):
-        self.status_var.set("デバイスを検出中…")
+        self.status_var.set(self._t("status.detecting"))
         self._refresh_monitors()          # プロジェクターのホットプラグにも追従
         parsed = parse_dshow_devices(run_list_devices())
         # 同名デバイス（同じキャプチャーボードを2台等）も漏れなく表示できるよう、
@@ -642,10 +645,10 @@ class App:
         self.audio_combo["values"] = [""] + list(self._audio_map)
         if not self._video_map:
             self.video_combo.set("")
-            self.device_hint.set("デバイスが見つかりません。キャプチャーボードを接続して「再検出」")
+            self.device_hint.set(self._t("hint.no_devices"))
         else:
-            self.device_hint.set("※ キャプチャーボードを挿したら「再検出」で更新できます")
-        self.status_var.set(f"検出: 映像 {len(self._video_map)} / 音声 {len(self._audio_map)}")
+            self.device_hint.set(self._t("hint.devices"))
+        self.status_var.set(self._t("status.detected", v=len(self._video_map), a=len(self._audio_map)))
         self._keep_selection_after_refresh()
 
     def _keep_selection_after_refresh(self):
@@ -669,9 +672,9 @@ class App:
         cfg["video_device_id"] = self._video_map.get(sel_v, "")
         cfg["audio_device_id"] = self._audio_map.get(sel_a, "") if sel_a else ""
         vs = self.size_combo.get().strip()
-        cfg["video_size"] = "auto" if vs == FORMAT_AUTO_LABEL else vs
+        cfg["video_size"] = "auto" if vs == self._t("format.auto") else vs
         fs = self.fps_combo.get().strip()
-        cfg["framerate"] = "auto" if fs == FORMAT_AUTO_LABEL else fs
+        cfg["framerate"] = "auto" if fs == self._t("format.auto") else fs
         lab = self.monitor_combo.get()
         cfg["monitor_index"] = self._monitor_by_label.get(lab, -1)
         cfg["fullscreen"] = bool(self.chk_fullscreen.get())
@@ -681,14 +684,14 @@ class App:
 
     def start(self):
         if not self._video_map.get(self.video_combo.get()):
-            self.status_var.set("映像デバイスを選択してください")
+            self.status_var.set(self._t("status.select_video"))
             return
         self._refresh_monitors()          # 起動後にプロジェクターが増えても再検出
         self.cfg = self._current_cfg()
         save_config(self.cfg, self._config_path)
         ffplay = find_tool("ffplay.exe")
         if not ffplay:
-            self.status_var.set("ffplay が見つかりません（同梱 exe で起動してください）")
+            self.status_var.set(self._t("status.no_ffplay"))
             return
         argv = assemble_ffplay_args(self.cfg, self.monitors, ffplay)
         try:
@@ -700,32 +703,33 @@ class App:
         self._t0 = time.time()
         self.btn_start.config(state="disabled")
         self.btn_stop.config(state="normal")
-        self.status_var.set("ffplay 起動中…")
+        self.status_var.set(self._t("status.starting"))
         self.root.after(500, self._poll)
 
     def stop(self):
         self.controller.stop()
         self.btn_start.config(state="normal")
         self.btn_stop.config(state="disabled")
-        self.elapsed_var.set("停止")
-        self.status_var.set("停止しました")
+        self.elapsed_var.set(self._t("status.idle"))
+        self.status_var.set(self._t("status.stopped"))
 
     def _poll(self):
         if self.controller.running():
             secs = int(time.time() - self._t0)
-            self.elapsed_var.set(f"実行中 {secs}s")
-            self.status_var.set("パススルー表示中（Esc で終了）")
+            self.elapsed_var.set(self._t("status.elapsed", sec=secs))
+            self.status_var.set(self._t("status.running"))
             self.root.after(500, self._poll)
             return
         code = self.controller.exit_code()
         elapsed = time.time() - self._t0
-        is_failure, msg = ffplay_exit_report(code, elapsed, self.controller.stderr_tail())
+        is_failure, msg = ffplay_exit_report(code, elapsed,
+                                             self.controller.stderr_tail(), lang=self.lang)
         if is_failure:
-            messagebox.showwarning("パススルー表示", msg)
+            messagebox.showwarning(self._t("dialog.title"), msg)
         self.status_var.set(msg)
         self.btn_start.config(state="normal")
         self.btn_stop.config(state="disabled")
-        self.elapsed_var.set("停止")
+        self.elapsed_var.set(self._t("status.idle"))
         if self._stderr_path:
             try:
                 os.remove(self._stderr_path)
