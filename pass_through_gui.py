@@ -20,6 +20,7 @@ _LOGPREFIX = re.compile(r'^(\[[^\]]*\]\s*)+')
 _DEVICE_MARKER = re.compile(r'^"(.*)"\s+\((video|audio)\)$')
 
 DEFAULT_CONFIG = {
+    "language": "ja",           # 表示言語（LANGUAGES のキー）
     "video_device_id": "",
     "audio_device_id": "",
     "video_size": "auto",       # "auto" = デバイス推奨（-video_size 省略）
@@ -391,6 +392,8 @@ def load_config(path=None) -> dict:
             for key in cfg:
                 if key in data:
                     cfg[key] = data[key]
+        # 言語は辞書外の値・欠落を許さない（旧 config は "ja" へ）
+        cfg["language"] = cfg["language"] if cfg["language"] in LANGUAGES else "ja"
     except Exception:
         pass
     return cfg

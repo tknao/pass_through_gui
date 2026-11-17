@@ -379,6 +379,31 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(loaded["monitor_index"], -1)   # 欠落は既定値
             self.assertNotIn("hacker_key", loaded)          # 不明キーは無視
 
+    def test_default_language_is_japanese(self):
+        self.assertEqual(default_config()["language"], "ja")
+
+    def test_missing_language_key_falls_back_to_ja(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "cfg.json")
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump({"video_size": "640x480"}, f)   # language 無し = 旧形式
+            self.assertEqual(load_config(p)["language"], "ja")
+
+    def test_invalid_language_falls_back_to_ja(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "cfg.json")
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump({"language": "xx"}, f)          # 辞書外の値
+            self.assertEqual(load_config(p)["language"], "ja")
+
+    def test_language_roundtrip(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "cfg.json")
+            cfg = default_config()
+            cfg["language"] = "en"
+            save_config(cfg, p)
+            self.assertEqual(load_config(p)["language"], "en")
+
 
 class AssembleFfplayArgsTests(unittest.TestCase):
     IDX_MON = {"x": 0, "y": 0, "w": 1920, "h": 1080, "primary": True, "name": "A"}
