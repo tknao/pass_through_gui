@@ -13,8 +13,6 @@
 #
 import os
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
-
 FFMPEG_BIN = os.environ.get("FFMPEG_BIN", "C:/ffmpeg/bin")
 
 datas = [
@@ -47,7 +45,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,

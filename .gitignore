@@ -8,3 +8,7 @@ pass_through_gui_config.json
 releases/
 .vscode/
 .idea/
+.superpowers/
+.pytest_cache/
+.venv/
+venv/
