@@ -1,10 +1,12 @@
 # パススルー表示 (Pass-Through Display)
 
-USB キャプチャーボードの映像・音声を、2番目のモニター（プロジェクター）へ
-**超低遅延・自動フルスクリーン表示** する Windows アプリです。
+会場の講演とオンライン会議を結ぶ**ハイブリッド配信を、手軽にする Windows アプリ**。
+USB キャプチャーボードの映像・音声を、2台目のモニター（プロジェクター）へ
+**超低遅延・自動フルスクリーン表示** します。
 
-A Windows app that displays the video/audio from a USB capture card on the
-second monitor (projector) with **ultra-low latency, in fullscreen**.
+A Windows app that makes **hybrid (on-site + online) presentations easy**: it
+shows a USB capture card's video/audio fullscreen on a second monitor
+(projector) with **ultra-low latency**.
 
 [English summary ↓](#english-summary)
 
@@ -12,12 +14,21 @@ second monitor (projector) with **ultra-low latency, in fullscreen**.
 
 ## English Summary
 
+**Why**: the guest presenter's laptop needs **no meeting app** — just an HDMI
+output. The streaming laptop (which has the meeting client installed) runs this
+app and shares the projector output (Screen 2) **with audio** in the meeting,
+so online participants see and hear exactly what the room does.
+
 **What**: `pass_through_gui` captures HDMI video/audio from a guest presenter's
 PC through a USB capture card and displays it fullscreen on a projector
 (second monitor) with minimal delay — designed for hybrid meetings where the
 same PC also runs an online-meeting client (e.g. Webex).
 
 ![System architecture](docs/images/overview_en.png)
+
+**Requires**: Windows 10/11 x64 · DirectShow USB capture card — **for Mac
+presenter laptops, use an HDCP-capable capture card** (Mac HDMI output enables
+HDCP, which leaves regular capture cards black) · a second display / projector.
 
 **Features**: ultra-low-latency pipeline (`nobuffer` / `low_delay` /
 `framedrop` / `probesize 32k`) · device & monitor selection GUI · handles multiple
@@ -32,6 +43,33 @@ ffmpeg install required on target PCs.
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
+
+## このアプリの目的
+
+会場の講演（参加者の**持ち込みPC**）とオンライン会議（Webex など）を結ぶとき、
+次のことを不要にするためのアプリです。
+
+- ❌ 持ち込みPC への**会議アプリのインストール・ログイン・音声設定**
+- ❌ 配信機材の追加や、会場画面とは別の配信準備
+
+仕組みは2つだけ:
+
+1. **持ち込みPC側**: 自分のPCから **HDMI を出力するだけ**。会議アプリは不要で、
+   講演者は普段どおり自分のPCでプレゼンできます
+2. **配信用PC側**（会議アプリが入っているPC）: このアプリがキャプチャーした
+   映像・音声をプロジェクター（= Screen 2）に全画面表示し、会議アプリで
+   その **Screen 2 を「音声付き」で共有** します
+
+これで**会場が見ている映像・音声を、オンライン参加者もそのまま視聴** でき、
+ハイブリッド配信の準備が簡単になります。全体の配線は冒頭のシステム構成図を
+参照してください。
+
+```
+持ち込みPC ──HDMI──> USBキャプチャー ──USB──> 配信用PC ──HDMI──> プロジェクター (Screen 2)
+   (映像+音声のみ出力)                  (このアプリ)              │
+                                                    会議アプリが
+                                            「Screen 2 + 音声」を共有 ──> オンライン参加者
+```
 
 ## 特徴
 
@@ -54,6 +92,15 @@ ffmpeg install required on target PCs.
 - USB キャプチャーボード（DirectShow 対応のもの）
 - 2台目のディスプレイ or プロジェクター
 
+### キャプチャーボードの選び方（重要）
+
+持ち込みPC の OS によって、必要なボードが変わります。
+
+| 持ち込みPC | 必要なキャプチャーボード |
+|---|---|
+| Windows | DirectShow 対応の一般的なボードで可 |
+| **Mac** | **HDCP 対応ボードが必要**（Mac の HDMI 出力は HDCP が有効になるため、非対応ボードでは画面が黒くなって映りません） |
+
 ## 入手方法（exe）
 
 1. このリポジトリの [Releases](releases) ページを開く
@@ -70,6 +117,10 @@ ffmpeg install required on target PCs.
 5. 必要ならチェックボックス調整: フルスクリーン / 音声も出力 / 低遅延(最速)
 6. **[▶ 開始]** でプロジェクター側にフルスクリーン表示
 7. 終了は ffplay 画面で **Esc**、または **[■ 停止]** ボタン
+
+> **ハイブリッド配信の手順**: 配信用PC の会議アプリ（Webex など）で
+> **Screen 2（プロジェクター側）を「音声付き」で画面共有** すると、会場と
+> 同じ映像・音声がオンラインへそのまま配信されます。
 
 > **言語の切り替え**: 既定は日本語です。画面上部の「言語 / Language」コンボで
 > English に切り替えると、UI 全体が即時に英語へ変わります（設定は保存され、
@@ -119,6 +170,7 @@ python pass_through_gui.py --debug                 # ffplay 起動コマンド�
 
 | 症状 | 対処 |
 |---|---|
+| Mac 持ち込みPC で画面が黒い・映らない | Mac の HDMI 出力は HDCP が有効です。**HDCP 対応キャプチャーボード**をお使いください |
 | 「Could not run graph / device already in use」 | OBS・カメラアプリ等がキャプチャーデバイスを使用中です。先に終了してください |
 | 起動直後にエラーダイアログ | 解像度・FPS を「自動」に戻して再試行 |
 | 一覧にデバイスが出ない | キャプチャーボードを挿し直して **[再検出]** をクリック |
