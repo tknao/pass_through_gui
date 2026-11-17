@@ -553,6 +553,32 @@ class AppDuplicateDeviceTests(unittest.TestCase):
                 root.destroy()
 
 
+class LanguageSwitchTests(unittest.TestCase):
+    def test_default_lang_is_ja_and_switch_preserves_selection(self):
+        import tkinter as tk
+        import pass_through_gui as mod
+        with tempfile.TemporaryDirectory() as d:
+            root = tk.Tk(); root.withdraw()
+            app = mod.App(root, config_path=os.path.join(d, "cfg.json"))
+            try:
+                self.assertEqual(app.lang, "ja")
+                self.assertEqual(app.size_combo.get(), "自動（デバイス推奨）")
+                app._video_map = {"Fake Cam": "alt_video"}
+                app._audio_map = {"Mic": "alt_audio"}
+                app.video_combo["values"] = ["Fake Cam"]
+                app.video_combo.set("Fake Cam")
+                app._set_language("en")
+                self.assertEqual(app.lang, "en")
+                self.assertEqual(app.size_combo.get(), "Auto (device default)")
+                self.assertIn("Fake Cam", app.video_combo["values"])  # 一覧維持
+                self.assertEqual(app.video_combo.get(), "Fake Cam")   # 選択維持
+                import json
+                with open(os.path.join(d, "cfg.json"), encoding="utf-8") as f:
+                    self.assertEqual(json.load(f)["language"], "en")
+            finally:
+                root.destroy()
+
+
 class TranslationTests(unittest.TestCase):
     def test_ja_translation(self):
         self.assertEqual(tr("ja", "button.start"), "▶ 開始")

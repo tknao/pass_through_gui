@@ -513,7 +513,7 @@ class DisplayController:
 class App:
     def __init__(self, root, config_path=None):
         self.root = root
-        self.root.geometry("560x540")
+        self.root.geometry("560x620")   # 言語選択フレーム追加分の高さを確保
         self._config_path = config_path
         self.cfg = load_config(config_path)
         self.lang = self.cfg.get("language", "ja")   # load_config で ja に正規化済み
@@ -533,14 +533,55 @@ class App:
         """翻訳ヘルパー: self.lang の言語で tr() を引く。"""
         return tr(self.lang, key, **kwargs)
 
+    def _on_lang_selected(self, _event=None):
+        """言語コンボの表示名 → キー逆引き → 切替。"""
+        for lang, label in LANGUAGES.items():
+            if label == self.lang_combo.get():
+                self._set_language(lang)
+                break
+
+    def _set_language(self, lang):
+        """言語切替。現在のウィジェット状態を保存し、UI を再構築して復元する。"""
+        if lang not in LANGUAGES or lang == self.lang:
+            return
+        self.cfg = self._current_cfg()      # 現在のウィジェット状態を保存
+        self.lang = lang
+        self.cfg["language"] = lang         # 切替後の言語を設定へ反映
+        self._main.destroy()
+        self._build_widgets()
+        self._apply_cfg_to_widgets()        # サイズ/FPS/監視先を復元
+        self._refresh_device_combos()       # デバイス一覧+選択を復元
+        save_config(self.cfg, self._config_path)
+
+    def _refresh_device_combos(self):
+        """言語再構築後にデバイスコンボの一覧と選択を復元する。"""
+        self.video_combo["values"] = list(self._video_map)
+        self.audio_combo["values"] = [""] + list(self._audio_map)
+        self._keep_selection_after_refresh()
+
     # ---- UI 構築 ----
     def _build_widgets(self):
+        # 言語切替で全体を再構築するため、全 widget は self._main へ畳み込む。
+        self._main = ttk.Frame(self.root)
+        self._main.pack(fill="both", expand=True)
         pad = {"padx": 8, "pady": 4}
+
+        frame = ttk.LabelFrame(self._main, text=self._t("language.section"))
+        frame.pack(fill="x", padx=8, pady=4)
+        row = ttk.Frame(frame)
+        row.pack(fill="x", **pad)
+        ttk.Label(row, text=self._t("language.label")).pack(side="left")
+        self.lang_combo = ttk.Combobox(row, state="readonly",
+                                       values=[LANGUAGES[l] for l in LANGUAGES])
+        self.lang_combo.set(LANGUAGES[self.lang])
+        self.lang_combo.pack(side="left", padx=(4, 0))
+        self.lang_combo.bind("<<ComboboxSelected>>", self._on_lang_selected)
+
         self.status_var = tk.StringVar(value=self._t("status.ready"))
-        tk.Label(self.root, textvariable=self.status_var, anchor="w",
+        tk.Label(self._main, textvariable=self.status_var, anchor="w",
                  fg="#0a6", relief="sunken").pack(fill="x", padx=8, pady=6)
 
-        frame = ttk.LabelFrame(self.root, text=self._t("section.input"))
+        frame = ttk.LabelFrame(self._main, text=self._t("section.input"))
         frame.pack(fill="x", padx=8, pady=4)
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
@@ -556,7 +597,7 @@ class App:
         self.device_hint = tk.StringVar(value=self._t("hint.devices"))
         ttk.Label(frame, textvariable=self.device_hint, foreground="#666").pack(anchor="w", **pad)
 
-        frame = ttk.LabelFrame(self.root, text=self._t("section.display"))
+        frame = ttk.LabelFrame(self._main, text=self._t("section.display"))
         frame.pack(fill="x", padx=8, pady=4)
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
@@ -582,7 +623,7 @@ class App:
         ttk.Checkbutton(row, text=self._t("check.audio"), variable=self.chk_audio).pack(side="left", padx=(12, 0))
         ttk.Checkbutton(row, text=self._t("check.lowlatency"), variable=self.chk_lowlatency).pack(side="left", padx=(12, 0))
 
-        frame = ttk.LabelFrame(self.root, text=self._t("section.controls"))
+        frame = ttk.LabelFrame(self._main, text=self._t("section.controls"))
         frame.pack(fill="x", padx=8, pady=4)
         row = ttk.Frame(frame)
         row.pack(fill="x", **pad)
