@@ -32,6 +32,99 @@ DEFAULT_CONFIG = {
 
 FAST_EXIT_SECONDS = 3.0         # これより速い終了は失敗扱い（ffplay は失敗時 exit 0）
 
+# ---- 多言語対応 ----
+LANGUAGES = {"ja": "日本語", "en": "English"}
+
+TRANSLATIONS = {
+    "ja": {
+        "app.title": "パススルー表示（キャプチャー → プロジェクター）",
+        "status.ready": "準備完了",
+        "language.section": "言語 / Language",
+        "language.label": "言語:",
+        "section.input": "1. 入力デバイス",
+        "section.display": "2. 表示設定",
+        "section.controls": "3. 操作",
+        "label.video": "映像デバイス:",
+        "label.audio": "音声デバイス:",
+        "button.rescan": "再検出",
+        "label.resolution": "解像度:",
+        "label.fps": "FPS:",
+        "label.output": "表示先:",
+        "check.fullscreen": "フルスクリーンで表示",
+        "check.audio": "音声も出力",
+        "check.lowlatency": "低遅延(最速)",
+        "button.start": "▶ 開始",
+        "button.stop": "■ 停止",
+        "status.idle": "停止中",
+        "status.stopped": "停止しました",
+        "status.detecting": "デバイスを検出中…",
+        "status.detected": "検出: 映像 {v} / 音声 {a}",
+        "status.select_video": "映像デバイスを選択してください",
+        "status.no_ffplay": "ffplay が見つかりません（同梱 exe で起動してください）",
+        "status.running": "パススルー表示中（Esc で終了）",
+        "status.elapsed": "実行中 {sec}s",
+        "hint.devices": "※ キャプチャーボードを挿したら「再検出」で更新できます",
+        "hint.no_devices": "デバイスが見つかりません。キャプチャーボードを接続して「再検出」",
+        "format.auto": "自動（デバイス推奨）",
+        "monitor.auto": "自動（プライマリ以外＝プロジェクター）",
+        "monitor.entry": "モニター{n}: {name} ({w}x{h}@{x},{y})",
+        "monitor.primary": " (プライマリ)",
+        "dialog.title": "パススルー表示",
+        "runtime.exited": "ffplay が終了しました (code {code})",
+    },
+    "en": {
+        "app.title": "Pass-Through Display (Capture → Projector)",
+        "status.ready": "Ready",
+        "language.section": "Language",
+        "language.label": "Language:",
+        "section.input": "1. Input Devices",
+        "section.display": "2. Display Settings",
+        "section.controls": "3. Controls",
+        "label.video": "Video device:",
+        "label.audio": "Audio device:",
+        "button.rescan": "Rescan",
+        "label.resolution": "Resolution:",
+        "label.fps": "FPS:",
+        "label.output": "Output to:",
+        "check.fullscreen": "Fullscreen",
+        "check.audio": "Output audio",
+        "check.lowlatency": "Low latency (fastest)",
+        "button.start": "▶ Start",
+        "button.stop": "■ Stop",
+        "status.idle": "Stopped",
+        "status.stopped": "Stopped",
+        "status.detecting": "Detecting devices…",
+        "status.detected": "Detected: {v} video / {a} audio",
+        "status.select_video": "Please select a video device",
+        "status.no_ffplay": "ffplay not found (run the bundled exe)",
+        "status.running": "Pass-through active (Esc to exit)",
+        "status.elapsed": "Running {sec}s",
+        "hint.devices": "Tip: plug in the capture device, then click Rescan",
+        "hint.no_devices": "No devices found. Connect a capture device and click Rescan",
+        "format.auto": "Auto (device default)",
+        "monitor.auto": "Auto (non-primary = projector)",
+        "monitor.entry": "Monitor {n}: {name} ({w}x{h}@{x},{y})",
+        "monitor.primary": " (primary)",
+        "dialog.title": "Pass-Through Display",
+        "runtime.exited": "ffplay exited (code {code})",
+    },
+}
+
+
+def tr(lang: str = "ja", key: str = "", **kwargs) -> str:
+    """言語に応じた文字列。辞書外の言語・未訳キーは ja へフォールバック。
+    プレースホルダは {name} 形式。置換失敗時は原文をそのまま返す。"""
+    table = TRANSLATIONS.get(lang) or TRANSLATIONS["ja"]
+    s = table.get(key)
+    if s is None:
+        s = TRANSLATIONS["ja"].get(key, key)
+    if kwargs:
+        try:
+            s = s.format(**kwargs)
+        except (KeyError, IndexError):
+            pass
+    return s
+
 
 def _strip_log_prefix(line: str) -> str:
     """ffmpeg の行頭 [dshow @ ...] 等を除去する。"""

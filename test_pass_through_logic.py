@@ -8,6 +8,7 @@ import time
 import unittest
 
 from pass_through_gui import (App, DEFAULT_CONFIG, DisplayController,
+                              LANGUAGES, TRANSLATIONS, tr,
                               _clean_fps, _clean_size, _device_id_suffix,
                               _unique_labels, assemble_ffplay_args,
                               build_ffplay_cmd, default_config, ffplay_env,
@@ -515,6 +516,34 @@ class AppDuplicateDeviceTests(unittest.TestCase):
             finally:
                 mod.run_list_devices = original
                 root.destroy()
+
+
+class TranslationTests(unittest.TestCase):
+    def test_ja_translation(self):
+        self.assertEqual(tr("ja", "button.start"), "▶ 開始")
+
+    def test_en_translation(self):
+        self.assertEqual(tr("en", "button.start"), "▶ Start")
+
+    def test_unknown_language_falls_back_to_japanese(self):
+        self.assertEqual(tr("fr", "button.start"), "▶ 開始")
+
+    def test_unknown_key_returns_key_itself(self):
+        self.assertEqual(tr("ja", "no.such.key"), "no.such.key")
+
+    def test_placeholder_formatting(self):
+        self.assertEqual(tr("ja", "status.detected", v=2, a=1),
+                         "検出: 映像 2 / 音声 1")
+
+    def test_en_detected_formatting(self):
+        self.assertEqual(tr("en", "status.detected", v=2, a=1),
+                         "Detected: 2 video / 1 audio")
+
+    def test_all_languages_cover_same_keys(self):
+        self.assertEqual(set(TRANSLATIONS["ja"]), set(TRANSLATIONS["en"]))
+
+    def test_languages_are_ja_and_en(self):
+        self.assertEqual(set(LANGUAGES), {"ja", "en"})
 
 
 if __name__ == "__main__":
