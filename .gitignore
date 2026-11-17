@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.spec.bak
+*.log
+pass_through_gui_config.json
+releases/
+.vscode/
+.idea/
