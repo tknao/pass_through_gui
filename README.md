@@ -17,6 +17,8 @@ PC through a USB capture card and displays it fullscreen on a projector
 (second monitor) with minimal delay — designed for hybrid meetings where the
 same PC also runs an online-meeting client (e.g. Webex).
 
+![System architecture](docs/images/overview_en.png)
+
 **Features**: ultra-low-latency pipeline (`nobuffer` / `low_delay` /
 `framedrop`) · device & monitor selection GUI · handles multiple
 same-name capture devices · settings persisted to JSON · Japanese/English UI
